@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Menu } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS, SITE } from "@/lib/config";
+import { NAV_ITEMS, SITE } from "@/lib/salon/config";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Sheet,

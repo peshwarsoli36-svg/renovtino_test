@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS, SECTION_IDS } from "@/lib/config";
+import { NAV_ITEMS, SECTION_IDS } from "@/lib/salon/config";
 import { useScrolled } from "@/hooks/use-scrolled";
 import { useActiveSection } from "@/hooks/use-active-section";
 import { Logo } from "@/components/common/logo";
