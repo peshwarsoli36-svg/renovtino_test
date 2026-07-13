@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 
+import { COPY } from "@/lib/salon/content";
 import type { Booking } from "@/types";
 import {
   Card,
@@ -37,10 +38,10 @@ export function UpcomingBookings({
   return (
     <Card className="rounded-2xl">
       <CardHeader className="border-b">
-        <CardTitle className="text-base">Upcoming Appointments</CardTitle>
+        <CardTitle className="text-base">Komende afspraken</CardTitle>
         <CardAction>
           <span className="text-xs text-muted-foreground">
-            Next {bookings.length}
+            Volgende {bookings.length}
           </span>
         </CardAction>
       </CardHeader>
@@ -49,25 +50,36 @@ export function UpcomingBookings({
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
-            Loading…
+            {COPY.admin.loading}
           </div>
         ) : bookings.length === 0 ? (
           <p className="px-4 py-12 text-center text-sm text-muted-foreground">
-            No upcoming appointments.
+            Geen komende afspraken.
           </p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow className="border-white/10 hover:bg-transparent">
                 <TableHead className="pl-4 text-muted-foreground">
-                  Customer
+                  {COPY.admin.customer}
                 </TableHead>
-                <TableHead className="text-muted-foreground">Service</TableHead>
-                <TableHead className="text-muted-foreground">Date</TableHead>
-                <TableHead className="text-muted-foreground">Time</TableHead>
-                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">
+                  {COPY.admin.service}
+                </TableHead>
+                <TableHead className="text-muted-foreground">
+                  {COPY.admin.barber}
+                </TableHead>
+                <TableHead className="text-muted-foreground">
+                  {COPY.admin.date}
+                </TableHead>
+                <TableHead className="text-muted-foreground">
+                  {COPY.admin.time}
+                </TableHead>
+                <TableHead className="text-muted-foreground">
+                  {COPY.admin.status}
+                </TableHead>
                 <TableHead className="pr-4 text-right text-muted-foreground">
-                  Actions
+                  Acties
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -79,6 +91,9 @@ export function UpcomingBookings({
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {booking.service}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {booking.staff ?? COPY.booking.staffAny}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
                     {booking.date}

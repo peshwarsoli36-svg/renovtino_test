@@ -2,6 +2,8 @@
 
 import { Loader2 } from "lucide-react";
 
+import { SITE } from "@/lib/salon/config";
+import { COPY } from "@/lib/salon/content";
 import { useAppointments } from "@/hooks/use-appointments";
 import { StatCard } from "@/components/admin/stat-card";
 import { TodaysAppointments } from "@/components/admin/todays-appointments";
@@ -22,7 +24,7 @@ export function AdminDashboard() {
     deleteAppointment,
   } = useAppointments();
 
-  const today = new Date().toLocaleDateString("en-US", {
+  const today = new Date().toLocaleDateString(SITE.locale, {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -36,13 +38,13 @@ export function AdminDashboard() {
             Dashboard
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {today} · Welcome back, Sam
+            {today} · {COPY.admin.welcome}, {SITE.admin.ownerName}
           </p>
         </div>
         {loading ? (
           <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
             <Loader2 className="size-3.5 animate-spin" />
-            Syncing…
+            Synchroniseren…
           </span>
         ) : (
           <span className="text-xs text-emerald-400/80">● Live</span>

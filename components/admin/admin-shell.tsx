@@ -14,6 +14,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { AdminSidebarContent } from "@/components/admin/admin-sidebar";
+import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 
 /** Responsive admin chrome: fixed desktop rail, mobile drawer, and top bar. */
 export function AdminShell({ children }: { children: ReactNode }) {
@@ -55,6 +56,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
+            <AdminLogoutButton />
             <Button
               variant="ghost"
               size="icon"

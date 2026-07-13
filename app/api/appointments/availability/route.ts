@@ -3,15 +3,32 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { formatSupabaseError } from "@/lib/supabase/errors";
-import { getAvailableSlots, isDateSelectable } from "@/lib/booking/slots";
+import {
+  getAvailableSlots,
+  isDateSelectable,
+} from "@/lib/booking/slots";
+import {
+  getDaySlotsForStaff,
+  isValidStaffId,
+} from "@/lib/booking/staff-slots";
+import { NO_PREFERENCE_STAFF_ID } from "@/lib/salon/data";
+import type { AppointmentSlotRow } from "@/types";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date");
+  const staffId = searchParams.get("staffId") ?? NO_PREFERENCE_STAFF_ID;
 
   if (!date) {
     return NextResponse.json(
       { error: "Date parameter is required." },
+      { status: 400 }
+    );
+  }
+
+  if (!isValidStaffId(staffId)) {
+    return NextResponse.json(
+      { error: "Invalid staff selection." },
       { status: 400 }
     );
   }
@@ -24,23 +41,31 @@ export async function GET(request: Request) {
   }
 
   if (!isDateSelectable(date)) {
-    return NextResponse.json({ bookedTimes: [], availableSlots: [] });
+    return NextResponse.json({ bookedTimes: [], slots: [], availableSlots: [] });
   }
 
   try {
     const supabase = createServiceClient();
     const { data, error } = await supabase
       .from("appointments")
-      .select("booking_time")
+      .select("booking_time, staff_id")
       .eq("booking_date", date)
       .neq("status", "cancelled");
 
     if (error) throw error;
 
-    const bookedTimes = (data ?? []).map((row) => row.booking_time);
-    const availableSlots = getAvailableSlots(date, bookedTimes);
+    const rows = (data ?? []) as AppointmentSlotRow[];
+    const slots = getDaySlotsForStaff(date, rows, staffId);
+    const availableSlots = getAvailableSlots(
+      date,
+      slots.filter((s) => s.status === "booked").map((s) => s.time)
+    );
 
-    return NextResponse.json({ bookedTimes, availableSlots });
+    return NextResponse.json({
+      bookedTimes: slots.filter((s) => s.status === "booked").map((s) => s.time),
+      slots,
+      availableSlots,
+    });
   } catch (err) {
     return NextResponse.json(
       { error: formatSupabaseError(err) },

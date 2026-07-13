@@ -192,7 +192,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .reveal,
-    .animate-enter {
+    .animate-enter,
+    .hero-ken-burns {
       opacity: 1;
       transform: none;
       transition: none;
@@ -201,6 +202,21 @@
     html {
       scroll-behavior: auto;
     }
+  }
+
+  /* Slow Ken Burns zoom for hero background */
+  .hero-ken-burns {
+    animation: ken-burns 22s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+}
+
+@keyframes ken-burns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
   }
 }
 

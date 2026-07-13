@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { formatDateKey, formatRelativeDate } from "@/lib/booking/slots";
+import { formatDateKey, formatRelativeDate, formatDisplayTime } from "@/lib/booking/slots";
 import { getInitials } from "@/lib/booking/validation";
+import { COPY } from "@/lib/salon/content";
 import type { DbAppointment } from "@/lib/supabase/database.types";
 import type { Appointment, Booking, BookingStatus, Stat } from "@/types";
 import {
@@ -44,19 +45,31 @@ export function useAppointments() {
     }
 
     const supabase = createClient();
-    const channel = supabase
-      .channel("appointments-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "appointments" },
-        () => {
-          fetchAppointments();
-        }
-      )
-      .subscribe();
+    if (!supabase) {
+      return;
+    }
+
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    try {
+      channel = supabase
+        .channel("appointments-realtime")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "appointments" },
+          () => {
+            fetchAppointments();
+          }
+        )
+        .subscribe();
+    } catch {
+      return;
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [fetchAppointments]);
 
@@ -72,7 +85,8 @@ export function useAppointments() {
           customer: a.customer_name,
           phone: a.phone_number,
           service: a.service,
-          time: a.booking_time,
+          staff: a.staff_name ?? COPY.booking.staffAny,
+          time: formatDisplayTime(a.booking_time),
           status: a.status,
           initials: getInitials(a.customer_name),
         })),
@@ -93,8 +107,9 @@ export function useAppointments() {
           id: a.id,
           customer: a.customer_name,
           service: a.service,
+          staff: a.staff_name ?? COPY.booking.staffAny,
           date: formatRelativeDate(a.booking_date),
-          time: a.booking_time,
+          time: formatDisplayTime(a.booking_time),
           status: a.status,
         })),
     [appointments, todayKey]
@@ -107,6 +122,7 @@ export function useAppointments() {
     const days = new Set<number>();
 
     appointments.forEach((a) => {
+      if (!a.booking_date) return;
       const [y, m, d] = a.booking_date.split("-").map(Number);
       if (y === year && m - 1 === month && a.status !== "cancelled") {
         days.add(d);
@@ -146,33 +162,33 @@ export function useAppointments() {
     return [
       {
         id: "today",
-        label: "Today's Appointments",
+        label: COPY.admin.stats.today,
         value: String(todayCount),
-        change: `${pendingCount} pending`,
+        change: `${pendingCount} ${COPY.admin.filters.pending.toLowerCase()}`,
         trend: "up",
         icon: CalendarCheck,
       },
       {
         id: "week",
-        label: "Weekly Bookings",
+        label: COPY.admin.stats.week,
         value: String(weekCount),
-        change: "This week",
+        change: COPY.admin.stats.thisWeek,
         trend: "up",
         icon: CalendarDays,
       },
       {
         id: "customers",
-        label: "Total Customers",
+        label: COPY.admin.stats.customers,
         value: String(uniqueCustomers),
-        change: `${appointments.length} bookings`,
+        change: `${appointments.length} ${COPY.admin.stats.bookings}`,
         trend: "up",
         icon: Users,
       },
       {
         id: "rating",
-        label: "Pending Review",
+        label: COPY.admin.stats.pending,
         value: String(pendingCount),
-        change: "Awaiting confirm",
+        change: COPY.admin.stats.awaiting,
         trend: pendingCount > 0 ? "up" : "down",
         icon: Star,
       },

@@ -1,14 +1,13 @@
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
-import { SITE } from "@/lib/config";
+import { SITE } from "@/lib/salon/config";
 
 interface LogoProps {
   href?: string;
   className?: string;
 }
 
-/** The SAM wordmark with a gold accent dot. */
 export function Logo({ href = "#home", className }: LogoProps) {
   return (
     <Link

@@ -1,22 +1,21 @@
 import Link from "next/link";
 import { ArrowUpRight, Clock } from "lucide-react";
 
+import { formatPrice } from "@/lib/salon/data";
 import type { Service } from "@/types";
 
 interface ServiceCardProps {
   service: Service;
 }
 
-/** A single premium service tile that links through to booking. */
 export function ServiceCard({ service }: ServiceCardProps) {
-  const { name, description, duration, icon: Icon } = service;
+  const { name, description, duration, price, icon: Icon } = service;
 
   return (
     <Link
       href="#book"
       className="group relative flex h-full flex-col gap-5 overflow-hidden rounded-2xl border border-white/10 bg-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:bg-surface-2"
     >
-      {/* Soft gold glow on hover */}
       <div className="pointer-events-none absolute -right-16 -top-16 size-40 rounded-full bg-gold/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
 
       <div className="flex items-center justify-between">
@@ -33,9 +32,14 @@ export function ServiceCard({ service }: ServiceCardProps) {
         </p>
       </div>
 
-      <div className="mt-auto flex items-center gap-2 pt-2 text-xs font-medium uppercase tracking-wider text-white/50">
-        <Clock className="size-3.5 text-gold/70" />
-        {duration}
+      <div className="mt-auto flex items-center justify-between pt-2">
+        <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-white/50">
+          <Clock className="size-3.5 text-gold/70" />
+          {duration}
+        </div>
+        <span className="font-heading text-lg font-semibold text-gold">
+          {formatPrice(price)}
+        </span>
       </div>
     </Link>
   );

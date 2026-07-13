@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { SITE } from "@/lib/salon/config";
 import { buttonVariants } from "@/components/ui/button-variants";
 
 const SIZES = {
@@ -16,10 +17,9 @@ interface BookButtonProps {
   className?: string;
 }
 
-/** The primary gold call-to-action, reused across the site. */
 export function BookButton({
   href = "#book",
-  label = "Book Appointment",
+  label = SITE.cta.book,
   size = "lg",
   className,
 }: BookButtonProps) {

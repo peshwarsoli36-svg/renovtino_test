@@ -1,8 +1,8 @@
 import { Clock } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { OPENING_HOURS } from "@/lib/data";
-import { SITE } from "@/lib/config";
+import { OPENING_HOURS } from "@/lib/salon/data";
+import { COPY } from "@/lib/salon/content";
 import { Section } from "@/components/common/section";
 import { SectionHeading } from "@/components/common/section-heading";
 import { Reveal } from "@/components/common/reveal";
@@ -14,9 +14,9 @@ export function OpeningHours() {
   return (
     <Section id="hours" className="bg-[#0d0d0d]">
       <SectionHeading
-        overline="Hours"
-        title="Opening hours"
-        description="Walk-ins are welcome, but appointments are always recommended."
+        overline={COPY.hours.overline}
+        title={COPY.hours.title}
+        description={COPY.hours.body}
       />
 
       <Reveal className="mx-auto mt-14 max-w-xl">
@@ -27,10 +27,10 @@ export function OpeningHours() {
             </span>
             <div>
               <p className="font-heading text-lg font-semibold text-white">
-                This week
+                {COPY.hours.thisWeek}
               </p>
               <p className="text-sm text-muted-foreground">
-                {SITE.location} · by appointment
+                {COPY.hours.byAppointment}
               </p>
             </div>
           </div>
@@ -54,7 +54,7 @@ export function OpeningHours() {
                     </span>
                     {isToday ? (
                       <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-gold">
-                        Today
+                        {COPY.hours.today}
                       </span>
                     ) : null}
                   </div>

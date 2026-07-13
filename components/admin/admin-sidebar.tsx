@@ -1,12 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { SITE } from "@/lib/salon/config";
+import { COPY } from "@/lib/salon/content";
 import { ADMIN_NAV } from "@/lib/admin-data";
 import { Logo } from "@/components/common/logo";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-/** Shared sidebar contents used by both the desktop rail and mobile drawer. */
 export function AdminSidebarContent() {
   return (
     <div className="flex h-full flex-col">
@@ -40,12 +43,16 @@ export function AdminSidebarContent() {
         <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
           <Avatar>
             <AvatarFallback className="bg-gold/15 text-xs text-gold">
-              SB
+              {SITE.admin.ownerInitials}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-white">Sam Barber</p>
-            <p className="truncate text-xs text-muted-foreground">Owner</p>
+            <p className="truncate text-sm font-medium text-white">
+              {SITE.admin.ownerName}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              {SITE.admin.ownerRole}
+            </p>
           </div>
         </div>
         <Link
@@ -53,7 +60,7 @@ export function AdminSidebarContent() {
           className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-white/5 hover:text-white"
         >
           <ArrowLeft className="size-4" />
-          Back to site
+          {COPY.admin.backToSite}
         </Link>
       </div>
     </div>

@@ -1,20 +1,68 @@
-/** Business hours — 30-minute appointment slots. */
+/** Business hours — 45-minute appointment slots. */
 
-const WEEKDAY_SLOTS = generateSlots("09:00", "17:30");
-const SATURDAY_SLOTS = generateSlots("09:00", "15:30");
+import { OPENING_HOURS } from "@/lib/salon/data";
+import { SITE } from "@/lib/salon/config";
 
-function generateSlots(start: string, end: string): string[] {
+export const SLOT_DURATION_MINUTES = 45;
+
+const WEEKDAY_HOURS = OPENING_HOURS.find((h) => h.weekdays.includes(1))!;
+const SATURDAY_HOURS = OPENING_HOURS.find((h) => h.weekdays.includes(6))!;
+
+const WEEKDAY_SLOTS = generateSlotsFromHours(WEEKDAY_HOURS.hours, SLOT_DURATION_MINUTES);
+const SATURDAY_SLOTS = generateSlotsFromHours(SATURDAY_HOURS.hours, SLOT_DURATION_MINUTES);
+
+export type SlotStatus = "available" | "booked" | "past";
+
+export interface TimeSlot {
+  time: string;
+  status: SlotStatus;
+}
+
+function parseHoursRange(hours: string): { start: string; end: string } | null {
+  const match = hours.match(/(\d{2}:\d{2})\s*[–-]\s*(\d{2}:\d{2})/);
+  if (!match) return null;
+  return { start: match[1], end: match[2] };
+}
+
+function toMinutes(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+/** Last bookable slot start so appointment fits within closing time. */
+function lastSlotStart(closeTime: string, intervalMinutes: number): string {
+  const closeMinutes = toMinutes(closeTime);
+  const lastStart = closeMinutes - intervalMinutes;
+  const h = Math.floor(lastStart / 60);
+  const m = lastStart % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function generateSlotsFromHours(
+  hours: string,
+  intervalMinutes: number
+): string[] {
+  const range = parseHoursRange(hours);
+  if (!range) return [];
+  const end = lastSlotStart(range.end, intervalMinutes);
+  return generateSlots(range.start, end, intervalMinutes);
+}
+
+function generateSlots(
+  start: string,
+  end: string,
+  intervalMinutes: number
+): string[] {
   const slots: string[] = [];
   let [h, m] = start.split(":").map(Number);
-  const [endH, endM] = end.split(":").map(Number);
-  const endMinutes = endH * 60 + endM;
+  const endMinutes = toMinutes(end);
 
   while (h * 60 + m <= endMinutes) {
     slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-    m += 30;
+    m += intervalMinutes;
     if (m >= 60) {
-      h += 1;
-      m -= 60;
+      h += Math.floor(m / 60);
+      m %= 60;
     }
   }
 
@@ -28,7 +76,8 @@ export function getWeekday(dateStr: string): number {
 }
 
 function isShopClosed(dateStr: string): boolean {
-  return getWeekday(dateStr) === 0;
+  const weekday = getWeekday(dateStr);
+  return OPENING_HOURS.some((h) => h.closed && h.weekdays.includes(weekday));
 }
 
 function isPastDate(dateStr: string): boolean {
@@ -40,7 +89,7 @@ export function isDateSelectable(dateStr: string): boolean {
   return !isPastDate(dateStr) && !isShopClosed(dateStr);
 }
 
-/** All slots for a given date (empty array if closed or past). */
+/** All slot start times for a given date (empty array if closed or past). */
 export function getSlotsForDate(dateStr: string): string[] {
   if (!isDateSelectable(dateStr)) return [];
 
@@ -49,26 +98,45 @@ export function getSlotsForDate(dateStr: string): string[] {
   return WEEKDAY_SLOTS;
 }
 
-/** Filters out booked times and past times when date is today. */
+/** Supabase may return "HH:MM:SS" — normalize to slot format "HH:MM". */
+export function normalizeBookedTime(time: string): string {
+  return time.trim().slice(0, 5);
+}
+
+/** Every slot for the day with availability status (booked slots stay visible). */
+export function getDaySlots(dateStr: string, bookedTimes: string[]): TimeSlot[] {
+  const all = getSlotsForDate(dateStr);
+  const booked = new Set(bookedTimes.map(normalizeBookedTime));
+  const today = formatDateKey(new Date());
+  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+
+  return all.map((slot) => {
+    if (booked.has(slot)) {
+      return { time: slot, status: "booked" as const };
+    }
+    if (dateStr === today) {
+      const [h, m] = slot.split(":").map(Number);
+      if (h * 60 + m <= nowMinutes) {
+        return { time: slot, status: "past" as const };
+      }
+    }
+    return { time: slot, status: "available" as const };
+  });
+}
+
+/** Available slots only — used by server validation and conflict checks. */
 export function getAvailableSlots(
   dateStr: string,
   bookedTimes: string[]
 ): string[] {
-  const all = getSlotsForDate(dateStr);
-  const booked = new Set(bookedTimes);
+  return getDaySlots(dateStr, bookedTimes)
+    .filter((slot) => slot.status === "available")
+    .map((slot) => slot.time);
+}
 
-  const today = formatDateKey(new Date());
-  const now = new Date();
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-
-  return all.filter((slot) => {
-    if (booked.has(slot)) return false;
-    if (dateStr === today) {
-      const [h, m] = slot.split(":").map(Number);
-      return h * 60 + m > nowMinutes;
-    }
-    return true;
-  });
+/** Display time without seconds for admin UI. */
+export function formatDisplayTime(time: string): string {
+  return normalizeBookedTime(time);
 }
 
 export function formatDateKey(date: Date): string {
@@ -80,7 +148,7 @@ export function formatDateKey(date: Date): string {
 
 export function formatDisplayDate(dateStr: string): string {
   const [y, mo, d] = dateStr.split("-").map(Number);
-  return new Date(y, mo - 1, d).toLocaleDateString("en-US", {
+  return new Date(y, mo - 1, d).toLocaleDateString(SITE.locale, {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -94,7 +162,7 @@ export function formatRelativeDate(dateStr: string): string {
     new Date(Date.now() + 24 * 60 * 60 * 1000)
   );
 
-  if (dateStr === today) return "Today";
-  if (dateStr === tomorrow) return "Tomorrow";
+  if (dateStr === today) return "Vandaag";
+  if (dateStr === tomorrow) return "Morgen";
   return formatDisplayDate(dateStr);
 }

@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 
-import { AdminShell } from "@/components/admin/admin-shell";
+import { SITE } from "@/lib/salon/config";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard",
-  description: "Manage appointments, bookings and customers for SAM.",
+  description: `Beheer afspraken en boekingen voor ${SITE.legalName}.`,
 };
 
 export default function AdminLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return <AdminShell>{children}</AdminShell>;
+  return children;
 }

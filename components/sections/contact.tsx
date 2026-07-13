@@ -1,32 +1,32 @@
-import { Mail, MapPin, Navigation, Phone } from "lucide-react";
+import { Mail, MapPin, Navigation, Phone, Globe } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { SITE } from "@/lib/config";
+import { SITE } from "@/lib/salon/config";
+import { COPY } from "@/lib/salon/content";
 import { Section } from "@/components/common/section";
 import { Reveal } from "@/components/common/reveal";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { WhatsappIcon } from "@/components/common/icons";
 
 const CONTACT_ITEMS = [
-  { icon: Phone, label: "Phone", value: SITE.phone, href: SITE.phoneHref },
-  { icon: Mail, label: "Email", value: SITE.email, href: SITE.emailHref },
-  { icon: MapPin, label: "Address", value: SITE.address, href: SITE.maps },
+  { icon: Phone, label: COPY.contact.phone, value: SITE.phone, href: SITE.phoneHref },
+  { icon: Mail, label: COPY.contact.email, value: SITE.email, href: SITE.emailHref },
+  { icon: MapPin, label: COPY.contact.address, value: SITE.address, href: SITE.maps },
+  { icon: Globe, label: COPY.contact.website, value: SITE.website.replace("https://", ""), href: SITE.website },
 ];
 
 export function Contact() {
   return (
     <Section id="contact" className="bg-[#0d0d0d]">
       <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        {/* Details */}
         <div className="flex flex-col gap-8">
           <Reveal className="flex flex-col gap-4">
-            <span className="overline">Contact</span>
+            <span className="overline">{COPY.contact.overline}</span>
             <h2 className="font-heading text-3xl font-semibold tracking-tight text-white text-balance sm:text-4xl">
-              Come say hello
+              {COPY.contact.title}
             </h2>
             <p className="max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Find us in {SITE.location}. Call ahead, message us, or simply drop
-              by the shop.
+              {COPY.contact.body}
             </p>
           </Reveal>
 
@@ -63,7 +63,7 @@ export function Contact() {
               )}
             >
               <WhatsappIcon className="size-4" />
-              WhatsApp
+              {COPY.contact.whatsapp}
             </a>
             <a
               href={SITE.maps}
@@ -75,36 +75,24 @@ export function Contact() {
               )}
             >
               <Navigation className="size-4 text-gold" />
-              Google Maps
+              {COPY.contact.maps}
             </a>
           </Reveal>
         </div>
 
-        {/* Decorative map */}
         <Reveal delay={120}>
           <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 bg-[#0f0f0f]">
-            <div
-              className="absolute inset-0 opacity-[0.12]"
-              style={{
-                backgroundImage:
-                  "linear-gradient(#c8a96a 1px, transparent 1px), linear-gradient(90deg, #c8a96a 1px, transparent 1px)",
-                backgroundSize: "44px 44px",
-              }}
+            <iframe
+              title={`${SITE.legalName} locatie`}
+              src={SITE.mapsEmbed}
+              className="absolute inset-0 h-full w-full border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
             />
-            <div className="absolute left-0 top-1/3 h-px w-full bg-white/10" />
-            <div className="absolute left-1/2 top-0 h-full w-px bg-white/10" />
-            <div className="absolute left-2/3 top-0 h-full w-px bg-white/5" />
-
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-              <span className="relative flex size-4">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold/60" />
-                <span className="relative inline-flex size-4 rounded-full bg-gold ring-4 ring-gold/20" />
-              </span>
-            </div>
-
             <div className="absolute inset-x-4 bottom-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-ink/80 px-4 py-3 backdrop-blur-sm">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-white">SAM Barbershop</p>
+                <p className="text-sm font-medium text-white">{SITE.legalName}</p>
                 <p className="truncate text-xs text-muted-foreground">
                   {SITE.address}
                 </p>
@@ -118,7 +106,7 @@ export function Contact() {
                   "h-9 shrink-0 rounded-full px-4 text-xs font-semibold"
                 )}
               >
-                Open
+                {COPY.contact.open}
               </a>
             </div>
           </div>

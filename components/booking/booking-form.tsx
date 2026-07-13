@@ -1,11 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Lock } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { SERVICE_OPTIONS } from "@/lib/data";
+import {
+  SERVICE_OPTIONS,
+  STAFF,
+  NO_PREFERENCE_STAFF_ID,
+} from "@/lib/salon/data";
+import { COPY } from "@/lib/salon/content";
 import { validateBooking } from "@/lib/booking/validation";
+import type { TimeSlot } from "@/lib/booking/slots";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,47 +46,55 @@ function Field({
 }
 
 export function BookingForm() {
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [staffId, setStaffId] = useState("");
   const [service, setService] = useState("");
   const [date, setDate] = useState<string | null>(null);
   const [time, setTime] = useState("");
-  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [daySlots, setDaySlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const fetchAvailability = useCallback(async (selectedDate: string) => {
-    setLoadingSlots(true);
-    setError(null);
-    try {
-      const res = await fetch(
-        `/api/appointments/availability?date=${selectedDate}`
-      );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to load times.");
-      setAvailableSlots(data.availableSlots ?? []);
-      setTime((prev) =>
-        data.availableSlots?.includes(prev) ? prev : ""
-      );
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load available times."
-      );
-      setAvailableSlots([]);
-    } finally {
-      setLoadingSlots(false);
-    }
-  }, []);
+  const fetchAvailability = useCallback(
+    async (selectedDate: string, selectedStaff: string) => {
+      if (!selectedStaff) return;
+      setLoadingSlots(true);
+      setError(null);
+      try {
+        const res = await fetch(
+          `/api/appointments/availability?date=${encodeURIComponent(selectedDate)}&staffId=${encodeURIComponent(selectedStaff)}`
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error ?? "Failed to load times.");
+        const slots: TimeSlot[] = Array.isArray(data.slots) ? data.slots : [];
+        setDaySlots(slots);
+        setTime((prev) => {
+          const selected = slots.find((s) => s.time === prev);
+          return selected?.status === "available" ? prev : "";
+        });
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load available times."
+        );
+        setDaySlots([]);
+      } finally {
+        setLoadingSlots(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
-    if (date) fetchAvailability(date);
+    if (date && staffId) fetchAvailability(date, staffId);
     else {
-      setAvailableSlots([]);
+      setDaySlots([]);
       setTime("");
     }
-  }, [date, fetchAvailability]);
+  }, [date, staffId, fetchAvailability]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -89,12 +103,18 @@ export function BookingForm() {
     const formData = {
       customerName: name,
       phoneNumber: phone,
+      email,
       service,
+      staffId,
       bookingDate: date ?? "",
       bookingTime: time,
     };
 
-    const validationError = validateBooking(formData);
+    const bookedTimes = daySlots
+      .filter((s) => s.status === "booked")
+      .map((s) => s.time);
+
+    const validationError = validateBooking(formData, bookedTimes);
     if (validationError) {
       setError(validationError);
       return;
@@ -108,7 +128,9 @@ export function BookingForm() {
         body: JSON.stringify({
           customerName: name.trim(),
           phoneNumber: phone.trim(),
+          email: email.trim(),
           service,
+          staffId,
           bookingDate: date,
           bookingTime: time,
         }),
@@ -118,17 +140,19 @@ export function BookingForm() {
       if (!res.ok) throw new Error(data.error ?? "Booking failed.");
 
       setSuccess(true);
-      setName("");
-      setPhone("");
+      setStaffId("");
       setService("");
       setDate(null);
       setTime("");
-      setAvailableSlots([]);
+      setName("");
+      setPhone("");
+      setEmail("");
+      setDaySlots([]);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Something went wrong. Please try again."
       );
-      if (date) fetchAvailability(date);
+      if (date && staffId) fetchAvailability(date, staffId);
     } finally {
       setSubmitting(false);
     }
@@ -141,10 +165,10 @@ export function BookingForm() {
           <Check className="size-7" />
         </span>
         <p className="font-heading text-lg font-medium text-white">
-          Your appointment request has been sent successfully.
+          {COPY.booking.successTitle}
         </p>
         <p className="max-w-xs text-sm text-muted-foreground">
-          We&apos;ll confirm your booking shortly. See you at the shop.
+          {COPY.booking.successBody}
         </p>
         <Button
           type="button"
@@ -152,7 +176,7 @@ export function BookingForm() {
           className="mt-2 rounded-full border-white/15"
           onClick={() => setSuccess(false)}
         >
-          Book another appointment
+          {COPY.booking.successAgain}
         </Button>
       </div>
     );
@@ -160,54 +184,51 @@ export function BookingForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Name" htmlFor="booking-name">
-          <Input
-            id="booking-name"
-            name="name"
-            placeholder="John Smith"
-            className="h-11"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={submitting}
-            required
-          />
-        </Field>
-        <Field label="Phone" htmlFor="booking-phone">
-          <Input
-            id="booking-phone"
-            name="phone"
-            type="tel"
-            placeholder="+1 555 000 0000"
-            className="h-11"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            disabled={submitting}
-            required
-          />
-        </Field>
-      </div>
-
-      <Field label="Service">
+      <Field label={COPY.booking.staff}>
         <Select
-          value={service || null}
-          onValueChange={(v) => setService(v ?? "")}
+          value={staffId || null}
+          onValueChange={(v) => {
+            setStaffId(v ?? "");
+            setTime("");
+          }}
           disabled={submitting}
         >
           <SelectTrigger className="h-11 w-full">
-            <SelectValue placeholder="Choose a service" />
+            <SelectValue placeholder={COPY.booking.staffPlaceholder} />
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false}>
-            {SERVICE_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.label}>
-                {option.label}
+            <SelectItem value={NO_PREFERENCE_STAFF_ID}>
+              {COPY.booking.staffAny}
+            </SelectItem>
+            {STAFF.map((member) => (
+              <SelectItem key={member.id} value={member.id}>
+                {member.name} — {member.role}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </Field>
 
-      <Field label="Date">
+      <Field label={COPY.booking.service}>
+        <Select
+          value={service || null}
+          onValueChange={(v) => setService(v ?? "")}
+          disabled={submitting}
+        >
+          <SelectTrigger className="h-11 w-full">
+            <SelectValue placeholder={COPY.booking.servicePlaceholder} />
+          </SelectTrigger>
+          <SelectContent alignItemWithTrigger={false}>
+            {SERVICE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label} · {option.duration}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
+
+      <Field label={COPY.booking.date}>
         <BookingCalendar
           selectedDate={date}
           onSelectDate={(d) => {
@@ -217,40 +238,103 @@ export function BookingForm() {
         />
       </Field>
 
-      <Field label="Time">
-        {!date ? (
+      <Field label={COPY.booking.time}>
+        {!date || !staffId ? (
           <p className="text-sm text-muted-foreground">
-            Select a date to see available times.
+            {COPY.booking.timeHint}
           </p>
         ) : loadingSlots ? (
           <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
-            Loading available times…
+            {COPY.booking.timeLoading}
           </div>
-        ) : availableSlots.length === 0 ? (
+        ) : daySlots.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No available times for this date. Please choose another day.
+            {COPY.booking.timeEmpty}
           </p>
         ) : (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {availableSlots.map((slot) => (
-              <button
-                key={slot}
-                type="button"
-                disabled={submitting}
-                onClick={() => setTime(slot)}
-                className={cn(
-                  "rounded-xl border px-2 py-2.5 text-sm font-medium tabular-nums transition-colors",
-                  time === slot
-                    ? "border-gold bg-gold/15 text-gold"
-                    : "border-white/10 text-white/80 hover:border-gold/30 hover:bg-white/5"
-                )}
-              >
-                {slot}
-              </button>
-            ))}
+            {daySlots.map((slot) => {
+              const isBooked = slot.status === "booked";
+              const isPast = slot.status === "past";
+              const isSelected = time === slot.time;
+              const isDisabled = submitting || isBooked || isPast;
+
+              return (
+                <button
+                  key={slot.time}
+                  type="button"
+                  disabled={isDisabled}
+                  onClick={() => setTime(slot.time)}
+                  className={cn(
+                    "flex flex-col items-center gap-0.5 rounded-xl border px-2 py-2.5 text-sm font-medium tabular-nums transition-colors",
+                    isBooked &&
+                      "cursor-not-allowed border-red-500/30 bg-red-500/10 text-red-300",
+                    isPast &&
+                      "cursor-not-allowed border-white/5 bg-white/[0.02] text-muted-foreground/50",
+                    !isBooked &&
+                      !isPast &&
+                      isSelected &&
+                      "border-gold bg-gold/15 text-gold",
+                    !isBooked &&
+                      !isPast &&
+                      !isSelected &&
+                      "border-white/10 text-white/80 hover:border-gold/30 hover:bg-white/5"
+                  )}
+                >
+                  <span>{slot.time}</span>
+                  {isBooked ? (
+                    <span className="flex items-center gap-1 text-[0.65rem] font-normal uppercase tracking-wide text-red-400/80">
+                      <Lock className="size-3" />
+                      {COPY.booking.booked}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
         )}
+      </Field>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Field label={COPY.booking.name} htmlFor="booking-name">
+          <Input
+            id="booking-name"
+            name="name"
+            placeholder={COPY.booking.namePlaceholder}
+            className="h-11"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={submitting}
+            required
+          />
+        </Field>
+        <Field label={COPY.booking.phone} htmlFor="booking-phone">
+          <Input
+            id="booking-phone"
+            name="phone"
+            type="tel"
+            placeholder={COPY.booking.phonePlaceholder}
+            className="h-11"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            disabled={submitting}
+            required
+          />
+        </Field>
+      </div>
+
+      <Field label={COPY.booking.email} htmlFor="booking-email">
+        <Input
+          id="booking-email"
+          name="email"
+          type="email"
+          placeholder={COPY.booking.emailPlaceholder}
+          className="h-11"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={submitting}
+        />
       </Field>
 
       {error ? (
@@ -261,16 +345,18 @@ export function BookingForm() {
 
       <Button
         type="submit"
-        disabled={submitting || !date || !time || !service}
+        disabled={
+          submitting || !staffId || !date || !time || !service || !name || !phone
+        }
         className="mt-1 h-12 w-full rounded-full text-[0.95rem] font-semibold tracking-wide"
       >
         {submitting ? (
           <>
             <Loader2 className="size-4 animate-spin" />
-            Booking…
+            {COPY.booking.submitting}
           </>
         ) : (
-          "Book Appointment"
+          COPY.booking.submit
         )}
       </Button>
     </form>

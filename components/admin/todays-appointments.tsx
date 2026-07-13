@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 
+import { COPY } from "@/lib/salon/content";
 import type { Appointment } from "@/types";
 import {
   Card,
@@ -33,10 +34,10 @@ export function TodaysAppointments({
   return (
     <Card className="rounded-2xl">
       <CardHeader className="border-b">
-        <CardTitle className="text-base">Today&apos;s Appointments</CardTitle>
+        <CardTitle className="text-base">{COPY.admin.stats.today}</CardTitle>
         <CardAction>
           <span className="text-xs text-muted-foreground">
-            {appointments.length} total
+            {appointments.length} totaal
           </span>
         </CardAction>
       </CardHeader>
@@ -45,11 +46,11 @@ export function TodaysAppointments({
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
-            Loading…
+            {COPY.admin.loading}
           </div>
         ) : appointments.length === 0 ? (
           <p className="px-4 py-12 text-center text-sm text-muted-foreground">
-            No appointments scheduled for today.
+            Geen afspraken vandaag.
           </p>
         ) : (
           <ul className="divide-y divide-white/10">
@@ -69,6 +70,7 @@ export function TodaysAppointments({
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
                     {appointment.service}
+                    {appointment.staff ? ` · ${appointment.staff}` : ""}
                     {appointment.phone ? ` · ${appointment.phone}` : ""}
                   </p>
                 </div>

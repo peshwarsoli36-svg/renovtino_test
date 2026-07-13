@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 
+import { SITE } from "@/lib/salon/config";
+import { JsonLd } from "@/components/seo/json-ld";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -10,26 +12,27 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://sam-barber.example.com"),
+  metadataBase: new URL(SITE.seo.metadataBase),
   title: {
-    default: "SAM — Modern Men's Barber",
-    template: "%s — SAM",
+    default: SITE.seo.title,
+    template: SITE.seo.titleTemplate,
   },
-  description:
-    "SAM is a modern men's barbershop offering precision haircuts, beard grooming and classic styling in a refined, minimal space. Book your appointment today.",
-  keywords: [
-    "barber",
-    "barbershop",
-    "men's haircut",
-    "beard trim",
-    "grooming",
-    "SAM",
-  ],
+  description: SITE.seo.description,
+  keywords: [...SITE.seo.keywords],
   openGraph: {
-    title: "SAM — Modern Men's Barber",
-    description:
-      "Precision haircuts, beard grooming and classic styling in a refined, minimal space.",
-    type: "website",
+    title: SITE.seo.openGraph.title,
+    description: SITE.seo.openGraph.description,
+    type: SITE.seo.openGraph.type,
+    locale: SITE.seo.openGraph.locale,
+    url: SITE.website,
+    siteName: SITE.name,
+  },
+  alternates: {
+    canonical: SITE.website,
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
@@ -39,8 +42,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark ${manrope.variable}`} suppressHydrationWarning>
+    <html
+      lang={SITE.language}
+      className={`dark ${manrope.variable}`}
+      suppressHydrationWarning
+    >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
+        <JsonLd />
         {children}
       </body>
     </html>
