@@ -16,6 +16,14 @@ export function isValidStaffId(staffId: string): boolean {
 
 /** Times when every active staff member is booked (for "no preference" mode). */
 export function getFullyBookedTimes(rows: AppointmentSlotRow[]): string[] {
+  const hasStaffData = rows.some((row) => row.staff_id);
+
+  if (!hasStaffData) {
+    return Array.from(
+      new Set(rows.map((row) => normalizeBookedTime(row.booking_time)))
+    );
+  }
+
   const allSlots = new Set<string>();
   const staffIds = STAFF.map((s) => s.id);
 
@@ -37,6 +45,14 @@ export function getBookedTimesForStaff(
   rows: AppointmentSlotRow[],
   staffId: string
 ): string[] {
+  const hasStaffData = rows.some((row) => row.staff_id);
+
+  if (!hasStaffData) {
+    return Array.from(
+      new Set(rows.map((row) => normalizeBookedTime(row.booking_time)))
+    );
+  }
+
   return rows
     .filter((row) => row.staff_id === staffId)
     .map((row) => normalizeBookedTime(row.booking_time));

@@ -232,6 +232,8 @@ export const COPY = {
     successTitle: "Uw afspraak is succesvol geboekt.",
     successBody: "We bevestigen uw boeking zo snel mogelijk. Tot ziens in de salon.",
     successAgain: "Nog een afspraak maken",
+    networkError:
+      "Kan de server niet bereiken. Controleer of de website draait en probeer opnieuw.",
   },
   contact: {
     overline: "Contact",

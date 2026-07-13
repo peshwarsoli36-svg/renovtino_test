@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { createServiceClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { getAppointmentSchemaMode } from "@/lib/supabase/appointments";
+import { MIGRATION_HINT } from "@/lib/supabase/errors";
 
 /** Verifies Supabase connectivity and appointments table access. */
 export async function GET() {
@@ -25,9 +27,17 @@ export async function GET() {
 
     if (readError) throw readError;
 
+    const schemaMode = await getAppointmentSchemaMode(supabase);
+
     return NextResponse.json({
       ok: true,
-      message: "Connected to Supabase. Appointments table is readable.",
+      schemaMode,
+      migrationRequired: schemaMode === "legacy",
+      migrationHint: schemaMode === "legacy" ? MIGRATION_HINT : null,
+      message:
+        schemaMode === "legacy"
+          ? "Connected to Supabase. Legacy schema detected — run migration for per-staff booking."
+          : "Connected to Supabase. Appointments table is readable.",
     });
   } catch (err) {
     const message =

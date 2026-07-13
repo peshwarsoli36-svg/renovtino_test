@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import {
+  fetchAppointmentSlotRows,
+  insertAppointment,
+} from "@/lib/supabase/appointments";
+import {
   formatSupabaseError,
   toSupabaseErrorDetails,
 } from "@/lib/supabase/errors";
@@ -22,7 +26,6 @@ import {
   getServiceById,
   getStaffById,
 } from "@/lib/salon/data";
-import type { AppointmentSlotRow } from "@/types";
 import type { DbAppointment } from "@/lib/supabase/database.types";
 
 function supabaseErrorResponse(err: unknown, status = 500) {
@@ -91,13 +94,10 @@ export async function POST(request: Request) {
 
     const supabase = createServiceClient();
 
-    const { data: existingRows } = await supabase
-      .from("appointments")
-      .select("booking_time, staff_id")
-      .eq("booking_date", formData.bookingDate)
-      .neq("status", "cancelled");
-
-    const rows = (existingRows ?? []) as AppointmentSlotRow[];
+    const { rows } = await fetchAppointmentSlotRows(
+      supabase,
+      formData.bookingDate
+    );
 
     const bookedTimes = getDaySlotsForStaff(
       formData.bookingDate,
@@ -152,22 +152,17 @@ export async function POST(request: Request) {
     const staffMember = getStaffById(assignedStaffId);
     const staffName = staffMember?.name ?? resolveStaffName(assignedStaffId);
 
-    const { data, error } = await supabase
-      .from("appointments")
-      .insert({
-        customer_name: formData.customerName,
-        phone_number: formData.phoneNumber,
-        email: formData.email || null,
-        service: resolveServiceLabel(formData.service),
-        service_price: service.price,
-        staff_id: assignedStaffId,
-        staff_name: staffName,
-        booking_date: formData.bookingDate,
-        booking_time: normalizedTime,
-        status: "pending",
-      })
-      .select()
-      .single();
+    const { data, error } = await insertAppointment(supabase, {
+      customer_name: formData.customerName,
+      phone_number: formData.phoneNumber,
+      email: formData.email || null,
+      service: resolveServiceLabel(formData.service),
+      service_price: service.price,
+      staff_id: assignedStaffId,
+      staff_name: staffName,
+      booking_date: formData.bookingDate,
+      booking_time: normalizedTime,
+    });
 
     if (error) {
       if (error.code === "23505") {

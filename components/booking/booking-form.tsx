@@ -77,9 +77,13 @@ export function BookingForm() {
           return selected?.status === "available" ? prev : "";
         });
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load available times."
-        );
+        const message =
+          err instanceof TypeError && err.message === "Failed to fetch"
+            ? COPY.booking.networkError
+            : err instanceof Error
+              ? err.message
+              : "Failed to load available times.";
+        setError(message);
         setDaySlots([]);
       } finally {
         setLoadingSlots(false);
@@ -136,7 +140,7 @@ export function BookingForm() {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Booking failed.");
 
       setSuccess(true);
@@ -149,9 +153,13 @@ export function BookingForm() {
       setEmail("");
       setDaySlots([]);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Something went wrong. Please try again."
-      );
+      const message =
+        err instanceof TypeError && err.message === "Failed to fetch"
+          ? COPY.booking.networkError
+          : err instanceof Error
+            ? err.message
+            : "Something went wrong. Please try again.";
+      setError(message);
       if (date && staffId) fetchAvailability(date, staffId);
     } finally {
       setSubmitting(false);
